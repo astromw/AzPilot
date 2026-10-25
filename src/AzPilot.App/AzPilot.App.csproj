@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>AzPilot</AssemblyName>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\azpilot.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.8" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.8" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.8" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.8" />
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AzPilot.Core\AzPilot.Core.csproj" />
+    <ProjectReference Include="..\AzPilot.Alpaca\AzPilot.Alpaca.csproj" />
+  </ItemGroup>
+</Project>

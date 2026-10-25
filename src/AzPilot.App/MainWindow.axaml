@@ -1,0 +1,208 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AzPilot.App"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="740"
+        x:Class="AzPilot.App.MainWindow"
+        Title="AzPilot ASCOM Driver" Icon="/Assets/azpilot.ico"
+        Width="300" Height="740" MinWidth="300" MinHeight="720"
+        Background="{DynamicResource WindowBg}" FontFamily="Inter" FontSize="11"
+        Foreground="{DynamicResource TextPrimary}" KeyDown="Window_KeyDown" KeyUp="Window_KeyUp">
+  <Window.Resources>
+    <SolidColorBrush x:Key="WindowBg" Color="#07111F"/>
+    <SolidColorBrush x:Key="SidebarBg" Color="#0D2038"/>
+    <SolidColorBrush x:Key="CardBg" Color="#0B182A"/>
+    <SolidColorBrush x:Key="CardBorder" Color="#47769F"/>
+    <SolidColorBrush x:Key="FieldBg" Color="#081525"/>
+    <SolidColorBrush x:Key="TextPrimary" Color="#F4F8FF"/>
+    <SolidColorBrush x:Key="TextMuted" Color="#B8CCE2"/>
+    <SolidColorBrush x:Key="Accent" Color="#79C7FF"/>
+    <SolidColorBrush x:Key="ControllerBg" Color="#081421"/>
+    <SolidColorBrush x:Key="PanelBg" Color="#091726"/>
+    <SolidColorBrush x:Key="PanelBorder" Color="#4B7194"/>
+    <SolidColorBrush x:Key="HeaderBorder" Color="#3F6588"/>
+    <SolidColorBrush x:Key="ScreenBg" Color="#020813"/>
+    <SolidColorBrush x:Key="DisplayBg" Color="#071B31"/>
+    <SolidColorBrush x:Key="DisplayFg" Color="#EAF6FF"/>
+    <SolidColorBrush x:Key="ButtonBg" Color="#16324F"/>
+    <SolidColorBrush x:Key="ButtonFg" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="ButtonBorder" Color="#6E9FC5"/>
+    <SolidColorBrush x:Key="ButtonHover" Color="#245378"/>
+    <SolidColorBrush x:Key="MutedBorder" Color="#5B7894"/>
+    <SolidColorBrush x:Key="TabBg" Color="#0D2038"/>
+    <SolidColorBrush x:Key="ErrorBg" Color="#8B1018"/>
+    <SolidColorBrush x:Key="ErrorFg" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="LogoBg" Color="#12385C"/>
+    <SolidColorBrush x:Key="LogoFg" Color="#FFFFFF"/>
+    <Color x:Key="SystemAccentColor">#79C7FF</Color>
+    <Color x:Key="SystemAccentColorDark1">#3D9BDC</Color>
+    <Color x:Key="SystemAccentColorDark2">#1E6394</Color>
+    <Color x:Key="SystemAccentColorLight1">#A9DDFF</Color>
+    <Color x:Key="SystemAccentColorLight2">#D2EDFF</Color>
+  </Window.Resources>
+  <Window.Styles>
+    <Style Selector="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
+    <Style Selector="TextBlock.mono"><Setter Property="FontFamily" Value="Consolas, monospace"/><Setter Property="TextWrapping" Value="NoWrap"/></Style>
+    <Style Selector="TextBlock.label"><Setter Property="Foreground" Value="{DynamicResource TextMuted}"/><Setter Property="FontSize" Value="9"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+    <Style Selector="TextBlock.red"><Setter Property="Foreground" Value="{DynamicResource Accent}"/></Style>
+    <Style Selector="TextBlock.section-title"><Setter Property="Foreground" Value="{DynamicResource Accent}"/><Setter Property="FontSize" Value="12"/><Setter Property="FontWeight" Value="Bold"/></Style>
+    <Style Selector="TextBlock.display"><Setter Property="Foreground" Value="{DynamicResource DisplayFg}"/><Setter Property="Background" Value="{DynamicResource DisplayBg}"/><Setter Property="FontFamily" Value="Consolas, monospace"/><Setter Property="FontSize" Value="18"/><Setter Property="FontWeight" Value="Bold"/><Setter Property="TextWrapping" Value="NoWrap"/><Setter Property="Padding" Value="5,1"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
+    <Style Selector="Border.section"><Setter Property="Background" Value="{DynamicResource CardBg}"/><Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="4"/><Setter Property="Padding" Value="5"/></Style>
+    <Style Selector="Button"><Setter Property="Background" Value="{DynamicResource ButtonBg}"/><Setter Property="Foreground" Value="{DynamicResource ButtonFg}"/><Setter Property="BorderBrush" Value="{DynamicResource ButtonBorder}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="1"/><Setter Property="Padding" Value="7,4"/><Setter Property="MinHeight" Value="28"/><Setter Property="FontSize" Value="10"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Cursor" Value="Hand"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
+    <Style Selector="Button:pointerover"><Setter Property="Foreground" Value="{DynamicResource ButtonFg}"/></Style>
+    <Style Selector="Button:pressed"><Setter Property="Foreground" Value="{DynamicResource ButtonFg}"/></Style>
+    <Style Selector="Button:focus"><Setter Property="Foreground" Value="{DynamicResource ButtonFg}"/></Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource ButtonHover}"/><Setter Property="Foreground" Value="{DynamicResource ButtonFg}"/></Style>
+    <Style Selector="Button:pressed /template/ ContentPresenter"><Setter Property="Foreground" Value="{DynamicResource ButtonFg}"/></Style>
+    <Style Selector="Button:focus /template/ ContentPresenter"><Setter Property="Foreground" Value="{DynamicResource ButtonFg}"/></Style>
+    <Style Selector="Button.red"><Setter Property="Background" Value="{DynamicResource DisplayBg}"/><Setter Property="Foreground" Value="{DynamicResource DisplayFg}"/><Setter Property="BorderBrush" Value="{DynamicResource Accent}"/></Style>
+    <Style Selector="Button.red:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource ButtonHover}"/></Style>
+    <Style Selector="Button.stop"><Setter Property="Background" Value="#B40000"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="#FF6961"/><Setter Property="FontWeight" Value="Bold"/></Style>
+    <Style Selector="Button.stop:pointerover"><Setter Property="Foreground" Value="White"/></Style>
+    <Style Selector="Button.stop:pressed"><Setter Property="Foreground" Value="White"/></Style>
+    <Style Selector="Button.stop:focus"><Setter Property="Foreground" Value="White"/></Style>
+    <Style Selector="Button.stop:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#D00000"/><Setter Property="Foreground" Value="White"/></Style>
+    <Style Selector="Button.stop:pressed /template/ ContentPresenter"><Setter Property="Foreground" Value="White"/></Style>
+    <Style Selector="Button.stop:focus /template/ ContentPresenter"><Setter Property="Foreground" Value="White"/></Style>
+    <Style Selector="Button.square"><Setter Property="Width" Value="40"/><Setter Property="Height" Value="40"/><Setter Property="MinHeight" Value="40"/><Setter Property="Padding" Value="0"/><Setter Property="HorizontalAlignment" Value="Center"/><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
+    <Style Selector="Button.direction"><Setter Property="FontFamily" Value="Consolas, monospace"/><Setter Property="FontSize" Value="22"/></Style>
+    <Style Selector="Button.pad-stop"><Setter Property="FontSize" Value="8"/></Style>
+    <Style Selector="Button.tracking-icon"><Setter Property="FontFamily" Value="Segoe UI Symbol"/><Setter Property="FontSize" Value="18"/></Style>
+    <Style Selector="Button.pulse-icon"><Setter Property="FontFamily" Value="Consolas, monospace"/><Setter Property="FontSize" Value="20"/></Style>
+    <Style Selector="Button.tab"><Setter Property="Padding" Value="7,5"/><Setter Property="MinWidth" Value="100"/></Style>
+    <Style Selector="TextBox, ComboBox, NumericUpDown"><Setter Property="Background" Value="{DynamicResource FieldBg}"/><Setter Property="Foreground" Value="{DynamicResource Accent}"/><Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="0"/><Setter Property="MinHeight" Value="28"/><Setter Property="Padding" Value="6,3"/><Setter Property="FontSize" Value="11"/></Style>
+    <Style Selector="ToggleSwitch"><Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/><Setter Property="FontSize" Value="10"/></Style>
+    <Style Selector="Separator"><Setter Property="Background" Value="{DynamicResource MutedBorder}"/><Setter Property="Margin" Value="0,5"/></Style>
+  </Window.Styles>
+
+  <Grid ColumnDefinitions="280,8,*" Margin="6">
+    <!-- Fixed EQMOD-style mount controller -->
+    <Border Grid.Column="0" Background="{DynamicResource ControllerBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1">
+      <Grid RowDefinitions="Auto,*,Auto">
+        <Border Background="{DynamicResource SidebarBg}" BorderBrush="{DynamicResource HeaderBorder}" BorderThickness="0,0,0,1" Padding="6,3">
+          <Grid ColumnDefinitions="*,Auto"><TextBlock Text="AZPILOT ASCOM DRIVER" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/><TextBlock Grid.Column="1" Text="AZ MODE" Classes="label" VerticalAlignment="Center"/></Grid>
+        </Border>
+        <StackPanel Grid.Row="1" Margin="4" Spacing="2">
+          <Border Height="48" Background="{DynamicResource ScreenBg}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1">
+            <Grid ColumnDefinitions="58,*">
+              <Border Width="46" Height="42" Margin="5" Background="{DynamicResource LogoBg}" BorderBrush="{DynamicResource LogoFg}" BorderThickness="1"><TextBlock Text="AZ" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource LogoFg}"/></Border>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0"><TextBlock Text="AZPILOT ASCOM" Foreground="{DynamicResource DisplayFg}" FontSize="18" FontWeight="Bold" TextWrapping="NoWrap"/><TextBlock Text="DRIVER V0.3.8" Foreground="{DynamicResource DisplayFg}" FontSize="12" FontWeight="Bold" TextWrapping="NoWrap"/></StackPanel>
+            </Grid>
+          </Border>
+
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="5"><Button Content="SETUP" Click="Setup_Click"/><Button Grid.Column="1" Content="{Binding ConnectionAction}" Command="{Binding ConnectCommand}"/><Border Grid.Column="2" Background="{DynamicResource ScreenBg}" BorderBrush="{DynamicResource MutedBorder}" BorderThickness="1" Padding="6,4"><TextBlock Text="{Binding ConnectionBadge}" Foreground="{DynamicResource DisplayFg}" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" TextWrapping="NoWrap"/></Border></Grid>
+          <Border Classes="section">
+            <StackPanel Spacing="1">
+              <TextBlock Text="Mount Position" Classes="section-title"/>
+              <Grid ColumnDefinitions="45,*" RowDefinitions="22,22,22,22,22">
+                <TextBlock Text="LST" Classes="red" FontSize="16" FontWeight="Bold"/><TextBlock Grid.Column="1" Text="{Binding LocalSiderealTimeText}" Classes="display"/>
+                <TextBlock Grid.Row="1" Text="RA" Classes="red" FontSize="16" FontWeight="Bold"/><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding RightAscensionText}" Classes="display"/>
+                <TextBlock Grid.Row="2" Text="DEC" Classes="red" FontSize="16" FontWeight="Bold"/><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DeclinationText}" Classes="display"/>
+                <TextBlock Grid.Row="3" Text="AZ" Classes="red" FontSize="16" FontWeight="Bold"/><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding AzimuthText}" Classes="display"/>
+                <TextBlock Grid.Row="4" Text="ALT" Classes="red" FontSize="16" FontWeight="Bold"/><TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding AltitudeText}" Classes="display"/>
+              </Grid>
+              <TextBlock Text="{Binding MotionText}" Classes="red" FontSize="9" TextAlignment="Right" TextWrapping="NoWrap"/>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="section">
+            <StackPanel Spacing="3">
+              <TextBlock Text="Slew Controls" Classes="section-title"/>
+              <Grid ColumnDefinitions="126,*" ColumnSpacing="7">
+                <Grid Width="126" Height="126">
+                  <Grid.RowDefinitions><RowDefinition/><RowDefinition/><RowDefinition/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                  <Button Grid.Row="0" Grid.Column="1" Classes="square direction" Tag="Altitude,1"><local:ArrowIcon Width="24" Height="24" Direction="Up" Stroke="{DynamicResource ButtonFg}"/></Button><Button Grid.Row="1" Grid.Column="0" Classes="square direction" Tag="Azimuth,-1"><local:ArrowIcon Width="24" Height="24" Direction="Left" Stroke="{DynamicResource ButtonFg}"/></Button>
+                  <Button Grid.Row="1" Grid.Column="1" Classes="square pad-stop" Content="STOP" Command="{Binding CancelGoToCommand}" ToolTip.Tip="Cancel GoTo and resume the previous tracking rate"/><Button Grid.Row="1" Grid.Column="2" Classes="square direction" Tag="Azimuth,1"><local:ArrowIcon Width="24" Height="24" Direction="Right" Stroke="{DynamicResource ButtonFg}"/></Button>
+                  <Button Grid.Row="2" Grid.Column="1" Classes="square direction" Tag="Altitude,-1"><local:ArrowIcon Width="24" Height="24" Direction="Down" Stroke="{DynamicResource ButtonFg}"/></Button>
+                </Grid>
+                <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center"><TextBlock Text="MANUAL RATE °/s" Classes="label"/><ComboBox ItemsSource="{Binding Rates}" SelectedItem="{Binding SelectedRate, Mode=TwoWay}"/><TextBlock Text="{Binding RateText}" Classes="red mono" FontSize="17" FontWeight="Bold"/><TextBlock Text="Hold arrows or arrow keys. Release to stop." Classes="label"/></StackPanel>
+              </Grid>
+              <Button Classes="stop" Content="STOP BOTH AXES · SPACE / ESC" Command="{Binding StopCommand}" ToolTip.Tip="Stop all motion and tracking"/>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="section"><StackPanel Spacing="3"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding TrackingTitle}" Classes="section-title"/><TextBlock Grid.Column="1" Text="{Binding TrackingStatus}" Classes="red" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/></Grid><Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="5"><Button Classes="square tracking-icon" Content="★" ToolTip.Tip="Sidereal tracking" Command="{Binding SiderealTrackingCommand}"/><Button Grid.Column="1" Classes="square tracking-icon" Content="☾" ToolTip.Tip="Lunar tracking · average RA rate" Command="{Binding LunarTrackingCommand}"/><Button Grid.Column="2" Classes="square tracking-icon" ToolTip.Tip="Solar tracking · average RA rate" Command="{Binding SolarTrackingCommand}"><local:SunIcon Width="25" Height="25" Stroke="{DynamicResource ButtonFg}"/></Button><Button Grid.Column="3" Classes="square tracking-icon" Content="■" ToolTip.Tip="Stop tracking and both axes" Command="{Binding StopTrackingCommand}"/></Grid></StackPanel></Border>
+
+          <Border Classes="section"><StackPanel Spacing="3"><Grid ColumnDefinitions="Auto,*"><TextBlock Text="Park Status:" Classes="section-title"/><TextBlock Grid.Column="1" Text="{Binding ParkStatus}" Classes="red" FontSize="9" HorizontalAlignment="Right"/></Grid><Grid ColumnDefinitions="*,*,*" ColumnSpacing="5"><Button Content="SET" Command="{Binding SetParkCommand}"/><Button Grid.Column="1" Content="PARK" Command="{Binding ParkCommand}"/><Button Grid.Column="2" Content="UNPARK" Command="{Binding UnparkCommand}"/></Grid></StackPanel></Border>
+
+          <Border Classes="section"><StackPanel Spacing="3"><TextBlock Text="ASCOM Pulse Guide · Alt/Az" Classes="section-title"/><TextBlock Text="{Binding PulseStatus}" Classes="label" FontSize="8"/><Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="5"><Button Classes="square pulse-icon" Command="{Binding PulseUpCommand}"><local:ArrowIcon Width="24" Height="24" Direction="Up" Stroke="{DynamicResource ButtonFg}"/></Button><Button Grid.Column="1" Classes="square pulse-icon" Command="{Binding PulseDownCommand}"><local:ArrowIcon Width="24" Height="24" Direction="Down" Stroke="{DynamicResource ButtonFg}"/></Button><Button Grid.Column="2" Classes="square pulse-icon" Command="{Binding PulseLeftCommand}"><local:ArrowIcon Width="24" Height="24" Direction="Left" Stroke="{DynamicResource ButtonFg}"/></Button><Button Grid.Column="3" Classes="square pulse-icon" Command="{Binding PulseRightCommand}"><local:ArrowIcon Width="24" Height="24" Direction="Right" Stroke="{DynamicResource ButtonFg}"/></Button></Grid></StackPanel></Border>
+        </StackPanel>
+        <Grid Grid.Row="2" Height="54">
+          <Border Background="{DynamicResource ScreenBg}" BorderBrush="{DynamicResource Accent}" BorderThickness="0,1,0,0" Padding="7,4">
+            <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource DisplayFg}" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+          </Border>
+          <Border Background="{DynamicResource ErrorBg}" BorderBrush="#FF6B70" BorderThickness="0,2,0,0" Padding="7,4" IsVisible="{Binding HasError}" ToolTip.Tip="{Binding FullErrorText}">
+            <TextBlock Text="{Binding FullErrorText}" Foreground="{DynamicResource ErrorFg}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+          </Border>
+        </Grid>
+      </Grid>
+    </Border>
+
+    <!-- Expandable right-hand setup panel -->
+    <Border x:Name="SetupPanel" Grid.Column="2" IsVisible="False" Background="{DynamicResource PanelBg}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1">
+      <Grid RowDefinitions="Auto,Auto,*,Auto">
+        <Border Background="{DynamicResource SidebarBg}" BorderBrush="{DynamicResource HeaderBorder}" BorderThickness="0,0,0,1" Padding="10,4">
+          <Grid ColumnDefinitions="*,Auto"><StackPanel VerticalAlignment="Center"><TextBlock Text="AZPILOT SETUP" Classes="red" FontSize="15" FontWeight="Bold"/><TextBlock Text="{Binding PageSubtitle}" Classes="label"/></StackPanel><Button Grid.Column="1" Content="CLOSE" Click="CloseSetup_Click" MinWidth="92"/></Grid>
+        </Border>
+        <Border Grid.Row="1" Background="{DynamicResource TabBg}" Padding="5"><StackPanel Orientation="Horizontal"><Button Classes="tab" Content="Pointing / GoTo" Command="{Binding ShowDashboardCommand}"/><Button Classes="tab" Content="Alignment / Sync" Command="{Binding ShowAlignCommand}"/><Button Classes="tab" Content="Site / Setup" Command="{Binding ShowSettingsCommand}"/><Button Classes="tab" Content="ASCOM" Command="{Binding ShowAscomCommand}"/><Button Classes="tab" Content="Diagnostics" Command="{Binding ShowDiagnosticsCommand}"/></StackPanel></Border>
+        <Grid Grid.Row="2" Margin="6">
+          <Grid IsVisible="{Binding IsDashboard}" ColumnDefinitions="*,*" RowDefinitions="*,180" ColumnSpacing="8" RowSpacing="8">
+            <Border Classes="section" Grid.ColumnSpan="2"><StackPanel Spacing="6"><TextBlock Text="Celestial Sphere · Looking Up at the Sky" Classes="section-title" TextAlignment="Center"/><local:MountDial Width="320" Height="320" HorizontalAlignment="Center" Azimuth="{Binding Snapshot.Azimuth}" Altitude="{Binding Snapshot.Altitude}"/><TextBlock Text="Rim = horizon · Centre = zenith · East left / West right" Classes="label" TextAlignment="Center"/><TextBlock Text="{Binding StatusText}" Classes="red" TextAlignment="Center"/></StackPanel></Border>
+            <Border Classes="section" Grid.Row="1"><StackPanel Spacing="7"><TextBlock Text="Alt/Az GoTo" Classes="section-title"/><Grid ColumnDefinitions="*,*" ColumnSpacing="7"><StackPanel Spacing="2"><TextBlock Text="Azimuth °" Classes="label"/><TextBox Text="{Binding TargetAzimuth}"/></StackPanel><StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Altitude °" Classes="label"/><TextBox Text="{Binding TargetAltitude}"/></StackPanel></Grid><Button Content="GO TO ALT/AZ" Command="{Binding GoToAltAzCommand}"/></StackPanel></Border>
+            <Border Classes="section" Grid.Row="1" Grid.Column="1"><StackPanel Spacing="7"><TextBlock Text="RA/Dec GoTo" Classes="section-title"/><Grid ColumnDefinitions="*,*" ColumnSpacing="7"><StackPanel Spacing="2"><TextBlock Text="RA hours" Classes="label"/><TextBox Text="{Binding TargetRightAscension}"/></StackPanel><StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Dec °" Classes="label"/><TextBox Text="{Binding TargetDeclination}"/></StackPanel></Grid><Button Content="GO TO RA/DEC" Command="{Binding GoToEquatorialCommand}"/></StackPanel></Border>
+          </Grid>
+
+          <Grid IsVisible="{Binding IsAlign}" ColumnDefinitions="260,*" ColumnSpacing="8">
+            <Border Classes="section">
+              <StackPanel Spacing="12">
+                <TextBlock Text="Alignment Model" Classes="section-title"/>
+                <ComboBox ItemsSource="{Binding AlignmentOptions}" SelectedItem="{Binding AlignmentMode, Mode=TwoWay}"/>
+                <Border Background="{DynamicResource FieldBg}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" Padding="10">
+                  <StackPanel Spacing="6"><TextBlock Text="ALIGNMENT POINTS" Classes="label"/><TextBlock Text="{Binding AlignmentPointText}" Classes="red" FontSize="20" FontWeight="Bold"/><TextBlock Text="{Binding AlignmentStatus}" Classes="label"/></StackPanel>
+                </Border>
+                <Button Content="CLEAR POINTS" Command="{Binding ClearAlignmentCommand}"/>
+                <TextBlock Text="CELESTIAL COORDINATES AT SYNC" Classes="label"/>
+                <Border Background="{DynamicResource FieldBg}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" Padding="7" MaxHeight="190">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto"><TextBlock Text="{Binding AlignmentCoordinatesText}" FontFamily="Consolas, monospace" FontSize="9" TextWrapping="Wrap"/></ScrollViewer>
+                </Border>
+                <TextBlock Text="Clear Points removes the model/offset and restores the raw mechanical reference. Multi-point requires three separated objects. Points are session-only." Classes="label"/>
+              </StackPanel>
+            </Border>
+            <StackPanel Grid.Column="1" Spacing="8">
+              <Border Classes="section"><StackPanel Spacing="8"><TextBlock Text="North / Level Reference" Classes="section-title"/><TextBlock Text="Physically level the tripod and point the tube level toward true north. This sets or adds Az 0°, Alt 0°."/><Button Content="SET CURRENT AS NORTH / LEVEL" Command="{Binding SetHomeCommand}"/></StackPanel></Border>
+              <Border Classes="section"><StackPanel Spacing="7"><TextBlock Text="Sync to Alt/Az" Classes="section-title"/><TextBlock Text="Tracking may remain active; stop manual or GoTo motion first." Classes="label"/><Grid ColumnDefinitions="*,*" ColumnSpacing="8"><StackPanel Spacing="2"><TextBlock Text="Known azimuth °" Classes="label"/><TextBox Text="{Binding TargetAzimuth}"/></StackPanel><StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Known altitude °" Classes="label"/><TextBox Text="{Binding TargetAltitude}"/></StackPanel></Grid><Button Content="SYNC / ADD POINT" Command="{Binding SyncAltAzCommand}"/></StackPanel></Border>
+              <Border Classes="section"><StackPanel Spacing="8"><TextBlock Text="Sync to a Sky Coordinate" Classes="section-title"/><TextBlock Text="Centre each object, enter its RA/Dec, then sync."/><Grid ColumnDefinitions="*,*" ColumnSpacing="8"><StackPanel Spacing="2"><TextBlock Text="RA hours" Classes="label"/><TextBox Text="{Binding TargetRightAscension}"/></StackPanel><StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Dec degrees" Classes="label"/><TextBox Text="{Binding TargetDeclination}"/></StackPanel></Grid><Button Content="SYNC / ADD POINT" Command="{Binding SyncEquatorialCommand}"/></StackPanel></Border>
+            </StackPanel>
+          </Grid>
+
+          <Grid IsVisible="{Binding IsSettings}" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,*" ColumnSpacing="8" RowSpacing="8">
+            <Border Classes="section"><StackPanel Spacing="8"><TextBlock Text="Connection" Classes="section-title"/><Grid ColumnDefinitions="82,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="7"><TextBlock Text="Source" Classes="label" VerticalAlignment="Center"/><ComboBox Grid.Column="1" x:Name="ConnectionTypeBox" SelectedIndex="0"><ComboBoxItem>Simulator</ComboBoxItem><ComboBoxItem>Sky-Watcher / SynScan USB</ComboBoxItem></ComboBox><TextBlock Grid.Row="1" Text="Serial port" Classes="label" VerticalAlignment="Center"/><ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding PortNames}" SelectedItem="{Binding SelectedPort, Mode=TwoWay}" IsEnabled="{Binding IsHardware}"/><TextBlock Grid.Row="2" Text="Model" Classes="label" VerticalAlignment="Center"/><ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding MountOptions}" SelectedItem="{Binding SelectedMount, Mode=TwoWay}"/></Grid><Grid ColumnDefinitions="*,40"><Button Content="{Binding ConnectionAction}" Command="{Binding ConnectCommand}"/><Button Grid.Column="1" Content="↻" Command="{Binding RefreshPortsCommand}"/></Grid><TextBlock Text="Disconnected at startup. Direct USB/serial · 115200 baud. Close SynScan before hardware connection." Classes="label"/></StackPanel></Border>
+            <Border Classes="section" Grid.Column="1"><StackPanel Spacing="8"><TextBlock Text="Site Information" Classes="section-title"/><Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="7"><StackPanel Spacing="2"><TextBlock Text="Latitude °" Classes="label"/><NumericUpDown Value="{Binding SiteLatitude, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="-90" Maximum="90" Increment="0.0001" FormatString="F4" ShowButtonSpinner="False"/></StackPanel><StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Longitude °" Classes="label"/><NumericUpDown Value="{Binding SiteLongitude, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="-180" Maximum="180" Increment="0.0001" FormatString="F4" ShowButtonSpinner="False"/></StackPanel><StackPanel Grid.Row="1" Spacing="2"><TextBlock Text="Elevation m" Classes="label"/><NumericUpDown Value="{Binding SiteElevation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="-300" Maximum="10000" Increment="10" FormatString="F0" ShowButtonSpinner="False"/></StackPanel></Grid><TextBlock Text="Longitude is positive east. Required for RA/Dec conversion and sidereal AZ tracking." Classes="label"/></StackPanel></Border>
+            <Border Classes="section" Grid.Row="1"><StackPanel Spacing="4"><TextBlock Text="Motion Limits" Classes="section-title"/><Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="7"><StackPanel Spacing="2"><TextBlock Text="Minimum altitude °" Classes="label"/><NumericUpDown Value="{Binding MinimumAltitude, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="-90" Maximum="80" Increment="1" FormatString="F1" ShowButtonSpinner="False"/></StackPanel><StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Manual ceiling °/s" Classes="label"/><ComboBox x:Name="ManualRateCeilingBox" ItemsSource="{Binding ManualRateCeilings}" SelectedItem="{Binding MaximumManualRate, Mode=TwoWay}"/></StackPanel><StackPanel Grid.Row="1" Spacing="2"><TextBlock Text="GoTo speed °/s" Classes="label"/><ComboBox x:Name="GoToRateBox" ItemsSource="{Binding GoToRates}" SelectedItem="{Binding GoToRate, Mode=TwoWay}"/></StackPanel></Grid><ToggleSwitch Content="Automatically reconnect USB after communication loss" IsChecked="{Binding AutoReconnect}"/><TextBlock Text="Minimum altitude may be −90° to +80°; for example −5° allows pointing 5° below the horizon. Reconnection never resumes motion." Classes="label"/></StackPanel></Border>
+            <Border Classes="section" Grid.Row="1" Grid.Column="1"><StackPanel Spacing="7"><TextBlock Text="Pulse Guide Settings" Classes="section-title"/><Grid ColumnDefinitions="*,*,*" ColumnSpacing="6"><StackPanel Spacing="2"><TextBlock Text="Duration ms" Classes="label"/><NumericUpDown Value="{Binding PulseDurationMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="10" Maximum="30000" Increment="100" FormatString="F0" ShowButtonSpinner="False"/></StackPanel><StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="Az °/s" Classes="label"/><NumericUpDown Value="{Binding GuideRateAzimuth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="0.0001" Maximum="0.1" Increment="0.0005" FormatString="F6" ShowButtonSpinner="False"/></StackPanel><StackPanel Grid.Column="2" Spacing="2"><TextBlock Text="Alt °/s" Classes="label"/><NumericUpDown Value="{Binding GuideRateAltitude, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="0.0001" Maximum="0.1" Increment="0.0005" FormatString="F6" ShowButtonSpinner="False"/></StackPanel></Grid><TextBlock Text="Up/Down correct altitude only; Left/Right correct azimuth only. Tracking must be active." Classes="label"/><Button Content="SAVE GUIDE RATES" Command="{Binding SaveGuideRatesCommand}"/></StackPanel></Border>
+            <Border Classes="section" Grid.Row="2" Grid.ColumnSpan="2"><Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="18"><StackPanel Spacing="7"><TextBlock Text="Display" Classes="section-title"/><ToggleSwitch Content="Night-vision palette" IsChecked="{Binding NightVision}"/></StackPanel><StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="ASCOM Server · restart to apply port" Classes="section-title"/><NumericUpDown Value="{Binding AlpacaPort, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="1024" Maximum="65535" Increment="1" FormatString="F0" ShowButtonSpinner="False"/><ToggleSwitch Content="Enable local ASCOM server" IsChecked="{Binding AlpacaEnabled}"/></StackPanel><Button Grid.Column="2" Content="SAVE SETTINGS" Command="{Binding SaveSettingsCommand}" VerticalAlignment="Center"/></Grid></Border>
+          </Grid>
+
+          <Grid IsVisible="{Binding IsAscom}" RowDefinitions="Auto,*" RowSpacing="8">
+            <Border Classes="section"><Grid ColumnDefinitions="*,300" ColumnSpacing="20"><StackPanel Spacing="10"><TextBlock Text="ASCOM Alpaca Telescope" Classes="section-title"/><TextBlock Text="ITelescopeV4 on this PC. Use Alpaca discovery or manual host 127.0.0.1, device telescope/0."/><Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="7"><TextBlock Text="Status" Classes="label"/><TextBlock Grid.Column="1" Text="{Binding AlpacaStatus}" Classes="red"/><TextBlock Grid.Row="1" Text="Base URL" Classes="label"/><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding AlpacaEndpoint}" Classes="mono"/><TextBlock Grid.Row="2" Text="Device" Classes="label"/><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding AlpacaDeviceName}" Classes="mono"/></Grid><Button Content="OPEN ASCOM SETUP PAGE" Command="{Binding OpenAlpacaCommand}" HorizontalAlignment="Left"/></StackPanel><Border Grid.Column="1" Background="{DynamicResource ScreenBg}" Padding="12"><StackPanel Spacing="7"><TextBlock Text="CAPABILITIES" Foreground="{DynamicResource DisplayFg}" FontSize="12" FontWeight="Bold"/><TextBlock Foreground="{DynamicResource DisplayFg}" Text="✓ Alt/Az and RA/Dec asynchronous GoTo"/><TextBlock Foreground="{DynamicResource DisplayFg}" Text="✓ MoveAxis, AbortSlew and single/multi-point sync"/><TextBlock Foreground="{DynamicResource DisplayFg}" Text="✓ Sidereal/lunar/solar tracking, Park/Unpark/SetPark"/><TextBlock Foreground="{DynamicResource DisplayFg}" Text="✓ Direct Alt/Az PulseGuide and guide rates"/><TextBlock Text="— Automatic Find Home" Foreground="{DynamicResource DisplayFg}" FontSize="9"/></StackPanel></Border></Grid></Border>
+            <Border Classes="section" Grid.Row="1"><StackPanel Spacing="8"><TextBlock Text="Client Checklist" Classes="section-title"/><TextBlock Text="1. Keep AzPilot running. 2. Press Connect and establish the mount connection. 3. Select the Alpaca telescope in your client. 4. Test AbortSlew before a full slew."/><TextBlock Text="The server binds to 127.0.0.1 only and is not exposed to other computers." Classes="label"/></StackPanel></Border>
+          </Grid>
+
+          <Grid IsVisible="{Binding IsDiagnostics}" RowDefinitions="Auto,*" RowSpacing="8">
+            <Border Classes="section"><Grid ColumnDefinitions="120,*,120,*"><StackPanel><TextBlock Text="MODE" Classes="label"/><TextBlock Text="{Binding ConnectionBadge}" Classes="red"/></StackPanel><StackPanel Grid.Column="1"><TextBlock Text="CONNECTION" Classes="label"/><TextBlock Text="{Binding Snapshot.ConnectionText}"/></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="FIRMWARE" Classes="label"/><TextBlock Text="{Binding FirmwareText}"/></StackPanel><StackPanel Grid.Column="3"><TextBlock Text="LAST UPDATE (UTC)" Classes="label"/><TextBlock Text="{Binding Snapshot.UpdatedAt, StringFormat='{}{0:HH:mm:ss.fff}'}"/></StackPanel></Grid></Border>
+            <Border Classes="section" Grid.Row="1"><Grid RowDefinitions="Auto,*"><TextBlock Text="ACTIVITY LOG" Classes="section-title" Margin="0,0,0,7"/><ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><ItemsControl ItemsSource="{Binding Logs}"><ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" Classes="mono" FontSize="10" Foreground="{DynamicResource Accent}" Margin="3,2" TextWrapping="NoWrap"/></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer></Grid></Border>
+          </Grid>
+        </Grid>
+        <Grid Grid.Row="3" Height="54">
+          <Border Background="{DynamicResource ScreenBg}" BorderBrush="{DynamicResource Accent}" BorderThickness="0,1,0,0" Padding="9,5">
+            <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource DisplayFg}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+          </Border>
+          <Border Background="{DynamicResource ErrorBg}" BorderBrush="#FF6B70" BorderThickness="0,2,0,0" Padding="9,5" IsVisible="{Binding HasError}" ToolTip.Tip="{Binding FullErrorText}">
+            <TextBlock Text="{Binding FullErrorText}" Foreground="{DynamicResource ErrorFg}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+          </Border>
+        </Grid>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>
