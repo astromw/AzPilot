@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
@@ -20,7 +21,7 @@ public sealed class AlpacaServer : IAsyncDisposable
     private CancellationTokenSource? _discoveryLifetime;
     private Task? _discoveryTask;
     private int _serverTransaction;
-    private bool _ascomClientConnected;
+    private volatile bool _ascomClientConnected;
     public int Port { get; private set; }
     public bool IsRunning => _app != null;
     public string Endpoint => $"http://127.0.0.1:{Port}";
@@ -45,18 +46,20 @@ public sealed class AlpacaServer : IAsyncDisposable
     {
         app.MapGet("/management/apiversions", () => Results.Json(new { Value = new[] { 1 } }));
         app.MapGet("/management/v1/description", () => Results.Json(new { Value = new {
-            ServerName = "AzPilot", Manufacturer = "AzPilot open-source project", ManufacturerVersion = "0.3.8", Location = "Local Windows PC" } }));
+            ServerName = "AzPilot", Manufacturer = "AzPilot open-source project", ManufacturerVersion = "0.3.9", Location = "Local Windows PC" } }));
         app.MapGet("/management/v1/configureddevices", () => Results.Json(new { Value = new[] { new {
             DeviceName = $"AzPilot {MountCatalog.Get(_engine.Settings.Mount).Name}", DeviceType = "Telescope", DeviceNumber = 0,
             UniqueID = "azpilot-azeq6-local-telescope-0" } } }));
         app.MapGet("/setup", () => Results.Content(SetupHtml(), "text/html"));
         app.MapGet("/setup/v1/telescope/0/setup", () => Results.Content(SetupHtml(), "text/html"));
 
-        Get(app, "connected", _ => Task.FromResult<object?>(_ascomClientConnected && _engine.Snapshot.Connected));
+        // ASCOM client lifetime is independent of a transient physical USB reconnect.
+        // Mount-dependent properties still return 1031 while the hardware is unavailable.
+        Get(app, "connected", _ => Task.FromResult<object?>(_ascomClientConnected));
         Get(app, "connecting", _ => Task.FromResult<object?>(_engine.Snapshot.Connecting));
         Get(app, "description", _ => Task.FromResult<object?>($"Alt/Az controller for {MountCatalog.Get(_engine.Settings.Mount).Name} with direct USB motor control"));
         Get(app, "driverinfo", _ => Task.FromResult<object?>("AzPilot independent AZ driver. Simulator and direct USB. No EQ-mode operations."));
-        Get(app, "driverversion", _ => Task.FromResult<object?>("0.3.8"));
+        Get(app, "driverversion", _ => Task.FromResult<object?>("0.3.9"));
         Get(app, "interfaceversion", _ => Task.FromResult<object?>((short)4));
         Get(app, "name", _ => Task.FromResult<object?>($"AzPilot {MountCatalog.Get(_engine.Settings.Mount).Name}"));
         Get(app, "supportedactions", _ => Task.FromResult<object?>(Array.Empty<string>()));
@@ -181,22 +184,35 @@ public sealed class AlpacaServer : IAsyncDisposable
 
     private async Task<IResult> Handle(HttpContext context, Func<Parameters, Task<object?>> action)
     {
-        var parameters = await Parameters.Read(context);
-        var clientTransaction = parameters.UInt("ClientTransactionID");
+        var clientTransaction = 0u;
         var serverTransaction = (uint)Interlocked.Increment(ref _serverTransaction);
+        var timer = Stopwatch.StartNew();
+        var method = context.Request.Method;
+        var name = context.Request.Path.Value?.Split('/', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? "unknown";
         try
         {
+            var parameters = await Parameters.Read(context);
+            clientTransaction = parameters.UInt("ClientTransactionID");
             var value = await action(parameters);
+            // Commands are individually traceable. High-frequency property polls are logged
+            // only when slow, keeping the field log useful instead of flooding it.
+            if (method != "GET" || timer.ElapsedMilliseconds >= 250)
+                _engine.LogDiagnostic($"ASCOM {method} {name} OK · {timer.ElapsedMilliseconds} ms");
             return Results.Json(value == null
                 ? new Response(null, clientTransaction, serverTransaction, 0, "")
                 : new Response(value, clientTransaction, serverTransaction, 0, ""));
         }
-        catch (AlpacaError ex) { return Results.Json(new Response(null, clientTransaction, serverTransaction, ex.Number, ex.Message)); }
+        catch (AlpacaError ex)
+        {
+            _engine.LogDiagnostic($"ASCOM {method} {name} ERROR {ex.Number} · {timer.ElapsedMilliseconds} ms · {ex.Message}");
+            return Results.Json(new Response(null, clientTransaction, serverTransaction, ex.Number, ex.Message));
+        }
         catch (Exception ex)
         {
             var number = ex switch { MountException when !_engine.Snapshot.Connected => 1031,
                 MountParkedException or MountInvalidOperationException => 1024,
                 ArgumentOutOfRangeException or FormatException => 1025, MountException => 1035, _ => 1280 };
+            _engine.LogDiagnostic($"ASCOM {method} {name} ERROR {number} · {timer.ElapsedMilliseconds} ms · {ex.GetType().Name}: {ex.Message}");
             return Results.Json(new Response(null, clientTransaction, serverTransaction, number, ex.Message));
         }
     }

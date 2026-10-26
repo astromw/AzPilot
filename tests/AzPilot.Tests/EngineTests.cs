@@ -193,15 +193,16 @@ public class EngineTests
     }
 
     [Fact]
-    public async Task ManualRelease_ResumesTrackingAtCurrentCoordinates()
+    public async Task ManualRelease_TrackingRemainsActiveAndRebasesAtCurrentCoordinates()
     {
         await using var engine = Create();
         await engine.ConnectAsync(ConnectionKind.Simulator, "SIM");
         await engine.SyncToAltAzAsync(180, 45);
         await engine.SetTrackingAsync(true);
         await engine.MoveAxisAsync(MountAxis.Azimuth, 0.25);
-        Assert.False(engine.Snapshot.Tracking);
+        Assert.True(engine.Snapshot.Tracking);
         Assert.True(engine.Snapshot.Slewing);
+        Assert.Equal(MotionKind.Manual, engine.Snapshot.Motion);
         await Task.Delay(500);
         await engine.StopAxisAsync(MountAxis.Azimuth);
         Assert.True(engine.Snapshot.Tracking);
@@ -209,7 +210,8 @@ public class EngineTests
         var resumed = engine.Snapshot;
         await Task.Delay(1300);
         var current = engine.Snapshot;
-        Assert.True(Math.Abs(resumed.RightAscension - current.RightAscension) < 0.0002);
+        Assert.True(Math.Abs(resumed.RightAscension - current.RightAscension) < 0.0002,
+            $"RA drift {resumed.RightAscension:0.00000000} -> {current.RightAscension:0.00000000}; Dec {resumed.Declination:0.000000} -> {current.Declination:0.000000}; mechanical {resumed.MechanicalAzimuth:0.000000}/{resumed.MechanicalAltitude:0.000000} -> {current.MechanicalAzimuth:0.000000}/{current.MechanicalAltitude:0.000000}; {current.StatusMessage}");
         Assert.True(Math.Abs(resumed.Declination - current.Declination) < 0.001);
     }
 
@@ -417,7 +419,15 @@ public class ParkAndPulseTests
         Assert.True(engine.Snapshot.Tracking);
         Assert.False(engine.Snapshot.Slewing);
         Assert.Equal(MotionKind.PulseGuide, engine.Snapshot.Motion);
-        await Assert.ThrowsAsync<MountInvalidOperationException>(() => engine.MoveAxisAsync(MountAxis.Azimuth, 0.1));
+        await engine.MoveAxisAsync(MountAxis.Azimuth, 0.1);
+        Assert.True(engine.Snapshot.Tracking);
+        Assert.True(engine.Snapshot.IsPulseGuiding);
+        Assert.True(engine.Snapshot.Slewing);
+        Assert.Equal(MotionKind.Manual, engine.Snapshot.Motion);
+        await engine.StopAxisAsync(MountAxis.Azimuth);
+        Assert.True(engine.Snapshot.Tracking);
+        Assert.True(engine.Snapshot.IsPulseGuiding);
+        Assert.False(engine.Snapshot.Slewing);
         await WaitFor(engine, s => !s.IsPulseGuiding);
         var after = engine.Snapshot;
         Assert.True(after.Tracking);
@@ -440,6 +450,112 @@ public class ParkAndPulseTests
         Assert.Contains(engine.RecentLogs, line => line.Contains("Pulse guide Left") && line.Contains("AZ correction -0.004178") && line.Contains("Alt correction 0.000000"));
         Assert.True(Math.Abs(engine.Snapshot.Altitude - before.Altitude) < 0.02);
         await engine.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ReplacementPulseIsAcceptedAndOldTimerCannotCompleteIt()
+    {
+        await using var engine = new MountEngine(new AppSettings());
+        await engine.ConnectAsync(ConnectionKind.Simulator, "SIM");
+        await engine.SyncToAltAzAsync(180, 45);
+        await engine.SetTrackingAsync(true);
+        await engine.PulseGuideAsync(GuideDirection.Up, 400);
+        await Task.Delay(100);
+        await engine.PulseGuideAsync(GuideDirection.Right, 1000);
+        Assert.True(engine.Snapshot.IsPulseGuiding);
+        Assert.Contains(engine.RecentLogs, line => line.Contains("replaced the previous pulse"));
+
+        await Task.Delay(500);
+        Assert.True(engine.Snapshot.IsPulseGuiding, "The replaced pulse's timer incorrectly completed the new pulse.");
+        Assert.True(engine.Snapshot.Tracking);
+        await WaitFor(engine, s => !s.IsPulseGuiding);
+        Assert.True(engine.Snapshot.Tracking);
+        Assert.False(engine.Snapshot.Slewing);
+    }
+
+    [Fact]
+    public async Task GuideRatesCanChangeDuringPulseWithoutCancellingIt()
+    {
+        await using var engine = new MountEngine(new AppSettings());
+        await engine.ConnectAsync(ConnectionKind.Simulator, "SIM");
+        await engine.SyncToAltAzAsync(180, 45);
+        await engine.SetTrackingAsync(true);
+        await engine.PulseGuideAsync(GuideDirection.Up, 600);
+        engine.SetGuideRates(0.004, 0.005);
+        Assert.Equal(0.004, engine.Settings.GuideRateAzimuth);
+        Assert.Equal(0.005, engine.Settings.GuideRateAltitude);
+        Assert.True(engine.Snapshot.IsPulseGuiding);
+        Assert.True(engine.Snapshot.Tracking);
+        await WaitFor(engine, s => !s.IsPulseGuiding);
+    }
+
+    [Fact]
+    public async Task SyncAndTrackingRateChangesAreAcceptedDuringPulse()
+    {
+        await using var engine = new MountEngine(new AppSettings());
+        await engine.ConnectAsync(ConnectionKind.Simulator, "SIM");
+        await engine.SyncToAltAzAsync(180, 45);
+        await engine.SetTrackingAsync(true);
+        await engine.PulseGuideAsync(GuideDirection.Up, 700);
+        await engine.SetTrackingRateAsync(TrackingRateMode.Lunar);
+        await engine.SyncToAltAzAsync(181, 46);
+        Assert.True(engine.Snapshot.IsPulseGuiding);
+        Assert.True(engine.Snapshot.Tracking);
+        Assert.Equal(TrackingRateMode.Lunar, engine.Snapshot.TrackingRate);
+        Assert.Equal(181, engine.Snapshot.Azimuth, 4);
+        Assert.Equal(46, engine.Snapshot.Altitude, 4);
+        await WaitFor(engine, s => !s.IsPulseGuiding);
+        Assert.True(engine.Snapshot.Tracking);
+    }
+
+    [Fact]
+    public async Task GoToDuringPulseCancelsPulseAndResumesTrackingAtDestination()
+    {
+        await using var engine = new MountEngine(new AppSettings { GoToRate = 2 });
+        await engine.ConnectAsync(ConnectionKind.Simulator, "SIM");
+        await engine.SyncToAltAzAsync(180, 45);
+        await engine.SetTrackingAsync(true);
+        await engine.PulseGuideAsync(GuideDirection.Left, 2000);
+        await engine.SlewToAltAzAsync(181, 46);
+        Assert.False(engine.Snapshot.IsPulseGuiding);
+        Assert.False(engine.Snapshot.Tracking);
+        await WaitFor(engine, s => s.Tracking && !s.Slewing);
+        Assert.Equal(181, engine.Snapshot.Azimuth, 1);
+        Assert.Equal(46, engine.Snapshot.Altitude, 1);
+    }
+
+    [Fact]
+    public async Task ParkDuringPulseCancelsPulseAndCompletesPark()
+    {
+        await using var engine = new MountEngine(new AppSettings());
+        await engine.ConnectAsync(ConnectionKind.Simulator, "SIM");
+        await engine.SetParkAsync();
+        await engine.SyncToAltAzAsync(180, 45);
+        await engine.SetTrackingAsync(true);
+        await engine.PulseGuideAsync(GuideDirection.Up, 2000);
+        await engine.ParkAsync();
+        Assert.False(engine.Snapshot.IsPulseGuiding);
+        Assert.False(engine.Snapshot.Tracking);
+        var parked = await WaitFor(engine, s => s.AtPark);
+        Assert.False(parked.ParkInProgress);
+    }
+
+    [Fact]
+    public async Task StopAllDuringManualPulseOverlayCancelsEveryMotionMode()
+    {
+        await using var engine = new MountEngine(new AppSettings());
+        await engine.ConnectAsync(ConnectionKind.Simulator, "SIM");
+        await engine.SyncToAltAzAsync(180, 45);
+        await engine.SetTrackingAsync(true);
+        await engine.PulseGuideAsync(GuideDirection.Left, 1200);
+        await engine.MoveAxisAsync(MountAxis.Altitude, 0.1);
+        Assert.True(engine.Snapshot.Slewing);
+        await engine.StopAllAsync();
+        await Task.Delay(1400);
+        Assert.False(engine.Snapshot.Tracking);
+        Assert.False(engine.Snapshot.IsPulseGuiding);
+        Assert.False(engine.Snapshot.Slewing);
+        Assert.Equal(MotionKind.Stopped, engine.Snapshot.Motion);
     }
 
     [Fact]

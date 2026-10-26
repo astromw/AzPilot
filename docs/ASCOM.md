@@ -18,17 +18,21 @@ Supported operations include asynchronous Alt/Az and RA/Dec GoTo, MoveAxis, Abor
 
 ## Client and mount connections are independent
 
-`Connected = true`, `Connect`, and `Disconnect` manage the ASCOM client session. Disconnecting a client, setting `Connected = false`, or closing that client does not stop motion or tracking and does not disconnect the mount from AzPilot. Before disconnecting a client during motion, deliberately use `AbortSlew` if a stop is required. The desktop **Disconnect** button closes the physical connection without stopping the mount; its last commanded motion and displayed tracking state are preserved. Use **STOP BOTH AXES** or ASCOM **AbortSlew** when a stop is required.
+`Connected = true`, `Connect`, and `Disconnect` manage the ASCOM client session. Disconnecting a client, setting `Connected = false`, or closing that client does not stop motion or tracking and does not disconnect the mount from AzPilot. Before disconnecting a client during motion, deliberately use `AbortSlew` if a stop is required.
+
+The logical ASCOM session is independent of the physical USB lifetime. Once a client is connected, `Connected` remains true across a transient physical disconnect/reconnect instead of falsely telling the client that its session ended. During the physical outage, mount-dependent properties and commands still return ASCOM error 1031. Reconnection never resumes motion automatically.
+
+The desktop **Disconnect** button closes the physical connection without stopping the mount; its last commanded motion and displayed tracking state are preserved. Use **STOP BOTH AXES** or ASCOM **AbortSlew** when a stop is required.
 
 ## Tracking rates
 
 `TrackingRates` exposes 0=Sidereal, 1=Lunar and 2=Solar, and `TrackingRate` selects among them. Changing the rate while tracking retains the current coordinate and keeps the mount connected. Sidereal holds fixed RA/Dec. Lunar and solar use average RA-only motion of 13.176396°/day and 0.985647°/day respectively, with declination held constant; they are not exact ephemerides. All modes use variable Alt/Az motor rates with measured-position feedback.
 
-If tracking was active before `MoveAxis` or an asynchronous GoTo, normal manual completion or GoTo completion recaptures the current sky coordinate and resumes the selected tracking rate. The desktop centre-pad **STOP** cancels a GoTo and resumes the previous rate. `AbortSlew`, **STOP BOTH AXES**, park, communication recovery and altitude-limit stops cancel automatic resumption; intentional desktop disconnect preserves the last state. A tracking request that would violate the altitude limit returns an error and leaves `Tracking = false`, `Slewing = false`, and both axes stopped.
+`MoveAxis` is an additive manual overlay when tracking or a pulse is active: the tracking/pulse rates continue, the manual axis rate is added, `Tracking` remains true, and `Slewing` is true while the manual correction is active. Position feedback uses feed-forward-only tracking during the overlay so it cannot oppose the correction. Setting the final manual axis rate to zero refreshes the measured position and continues tracking at that corrected sky coordinate. An asynchronous GoTo still suspends tracking and resumes it at the destination. The desktop centre-pad **STOP** cancels a GoTo and resumes the previous rate. `AbortSlew`, **STOP BOTH AXES**, park, communication recovery and altitude-limit stops cancel automatic resumption; intentional desktop disconnect preserves the last state. A tracking request that would violate the altitude limit returns an error and leaves `Tracking = false`, `Slewing = false`, and both axes stopped.
 
 ## Sync while tracking
 
-`SyncToAltAz`, `SyncToCoordinates` and `SyncToTarget` are accepted while tracking is active. Sync updates the selected pointing model without issuing a stop, then continues tracking the newly synced sky coordinate. Manual and GoTo motion must still be stopped before sync; parked mounts and active pulse operations remain protected.
+`SyncToAltAz`, `SyncToCoordinates` and `SyncToTarget` are accepted while tracking or pulse guiding is active. Sync updates the selected pointing model without issuing a stop, then continues tracking the newly synced sky coordinate. Non-tracking manual and GoTo motion must still be stopped before sync; parked mounts remain protected.
 
 Choose **SinglePoint** or **MultiPoint** in the desktop Alignment / Sync panel. In multi-point mode, every ASCOM or desktop Sync adds or refines a session alignment point. The 3D model activates with at least three points separated by 10° or more and is then used for position reports and GoTo inverse transformation. Use the desktop panel to inspect each point's sync-time celestial RA/Dec, point count and RMS, or clear the model. Alt/Az Sync captures converted RA/Dec at sync time; RA/Dec Sync stores the entered values directly. Clearing removes the alignment effect and restores the raw mechanical reference.
 
@@ -43,8 +47,14 @@ Choose **SinglePoint** or **MultiPoint** in the desktop Alignment / Sync panel. 
 
 - `CanPulseGuide` and `CanSetGuideRates` are true. The ASCOM `GuideRateRightAscension` property controls the azimuth pulse rate, and `GuideRateDeclination` controls the altitude pulse rate. Both use degrees per second.
 - `PulseGuide` uses direct Alt/Az directional semantics: 0=Up, 1=Down, 2=Right, 3=Left, with a duration of 10–30000 ms. This intentionally does not convert ASCOM N/E/S/W into equatorial corrections. It returns immediately; poll `IsPulseGuiding` for completion.
-- Tracking must already be enabled. Up/Down correct altitude only; Left/Right correct azimuth only. `Slewing` remains false during a pulse, and tracking resumes at the corrected position afterward.
-- Overlapping pulses and pulses while parked are rejected. `AbortSlew` cancels the pulse and stops tracking.
+- Tracking must already be enabled. Up/Down correct altitude only; Left/Right correct azimuth only. `Slewing` remains false during a pulse without a manual overlay, and tracking continues at the corrected position afterward.
+- A new pulse replaces the active pulse and invalidates the previous completion timer. `MoveAxis` manual overlays, Sync and tracking-rate changes are accepted during a pulse. Guide-rate edits affect subsequent pulses. GoTo and Park deliberately cancel the pulse before starting their own motion; pulses while parked remain rejected.
+- `AbortSlew` cancels manual, pulse and tracking together. PHD2 calibration and long-duration guiding require supervised physical validation; simulator/API tests do not establish mount smoothness.
 
+## Alpaca, COM and field diagnostics
+
+AzPilot uses Alpaca because it is the current network-style ASCOM API and supports local clients without a COM registration step. A classic COM driver would use the same SynScan serial commands, motor-rate changes and timing; changing the API alone would not inherently improve USB reliability or guiding. No classic COM driver is included in this preview.
+
+The desktop activity log is appended to `%LOCALAPPDATA%\AzPilot\logs\startup-YYYYMMDD.log`. It records ASCOM commands with elapsed time, all returned ASCOM errors, property reads taking at least 250 ms, pulse replacement/completion, serial communication warnings and reconnect outcomes. Keep the log covering a failed Cartes du Ciel or PHD2 session. It can show whether a pulse request arrived, was replaced, completed, or returned an error, rather than assuming Alpaca dropped it.
 
 The server is bound to loopback and is not accessible from other devices. UDP discovery uses the standard Alpaca port 32227. If another Alpaca server uses the HTTP port, change AzPilot's port and restart.

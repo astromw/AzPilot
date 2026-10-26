@@ -72,6 +72,29 @@ public class AlpacaTests
     }
 
     [Fact]
+    public async Task PhysicalDisconnectAndReconnect_DoNotClearLogicalClientSession()
+    {
+        await using var engine = new MountEngine(new AppSettings());
+        await engine.ConnectAsync(ConnectionKind.Simulator, "SIM");
+        await using var server = new AlpacaServer(engine);
+        await server.StartAsync(0, false);
+        using var client = new HttpClient { BaseAddress = new Uri(server.Endpoint) };
+        await Put(client, "connect", new());
+        Assert.True(await Bool(client, "connected"));
+
+        await engine.DisconnectAsync();
+        Assert.False(engine.Snapshot.Connected);
+        Assert.True(await Bool(client, "connected"));
+        var unavailable = await client.GetFromJsonAsync<JsonElement>("/api/v1/telescope/0/altitude");
+        Assert.Equal(1031, unavailable.GetProperty("ErrorNumber").GetInt32());
+
+        await Put(client, "connect", new());
+        Assert.True(engine.Snapshot.Connected);
+        Assert.True(await Bool(client, "connected"));
+        Assert.Equal(0, (await client.GetFromJsonAsync<JsonElement>("/api/v1/telescope/0/altitude"))!.GetProperty("ErrorNumber").GetInt32());
+    }
+
+    [Fact]
     public async Task TrackingRates_ExposeSiderealLunarAndSolar()
     {
         await using var engine = new MountEngine(new AppSettings());
@@ -119,6 +142,7 @@ public class AlpacaTests
         var response = await Put(client, "slewtoaltazasync", new() { ["Azimuth"] = "20", ["Altitude"] = "-20" });
         Assert.Equal(1025, response.GetProperty("ErrorNumber").GetInt32());
         Assert.False(engine.Snapshot.Slewing);
+        Assert.Contains(engine.RecentLogs, line => line.Contains("ASCOM PUT slewtoaltazasync ERROR 1025"));
     }
 
     private static async Task<T> Value<T>(HttpClient client, string path)
@@ -224,6 +248,55 @@ public class ParkPulseAlpacaTests
         Assert.False(await Bool(client, "slewing"));
         for (var i = 0; i < 50 && await Bool(client, "ispulseguiding"); i++) await Task.Delay(100);
         Assert.False(await Bool(client, "ispulseguiding"));
+        Assert.True(await Bool(client, "tracking"));
+    }
+
+    [Fact]
+    public async Task ReplacementPulseAndManualMoveAreAcceptedThroughAlpaca()
+    {
+        await using var engine = new MountEngine(new AppSettings());
+        await engine.ConnectAsync(ConnectionKind.Simulator, "SIM");
+        await engine.SyncToAltAzAsync(180, 45);
+        await using var server = new AlpacaServer(engine);
+        await server.StartAsync(0, false);
+        using var client = new HttpClient { BaseAddress = new Uri(server.Endpoint) };
+        await Put(client, "tracking", new() { ["Tracking"] = "true" });
+        await Put(client, "pulseguide", new() { ["Direction"] = "Up", ["Duration"] = "400" });
+        await Task.Delay(75);
+        await Put(client, "pulseguide", new() { ["Direction"] = "Right", ["Duration"] = "1200" });
+        await Task.Delay(500);
+        Assert.True(await Bool(client, "ispulseguiding"), "The old pulse timer completed its replacement.");
+
+        await Put(client, "moveaxis", new() { ["Axis"] = "1", ["Rate"] = "0.05" });
+        Assert.True(await Bool(client, "tracking"));
+        Assert.True(await Bool(client, "ispulseguiding"));
+        Assert.True(await Bool(client, "slewing"));
+        await Put(client, "moveaxis", new() { ["Axis"] = "1", ["Rate"] = "0" });
+        Assert.True(await Bool(client, "tracking"));
+        Assert.True(await Bool(client, "ispulseguiding"));
+        Assert.False(await Bool(client, "slewing"));
+        for (var i = 0; i < 50 && await Bool(client, "ispulseguiding"); i++) await Task.Delay(100);
+        Assert.False(await Bool(client, "ispulseguiding"));
+        Assert.Contains(engine.RecentLogs, line => line.Contains("ASCOM PUT pulseguide OK"));
+    }
+
+    [Fact]
+    public async Task PropertyReadsRemainResponsiveDuringPulseCommands()
+    {
+        await using var engine = new MountEngine(new AppSettings());
+        await engine.ConnectAsync(ConnectionKind.Simulator, "SIM");
+        await engine.SyncToAltAzAsync(180, 45);
+        await using var server = new AlpacaServer(engine);
+        await server.StartAsync(0, false);
+        using var client = new HttpClient { BaseAddress = new Uri(server.Endpoint) };
+        await Put(client, "tracking", new() { ["Tracking"] = "true" });
+        await Put(client, "pulseguide", new() { ["Direction"] = "Left", ["Duration"] = "2000" });
+
+        var reads = Enumerable.Range(0, 16).Select(_ =>
+            client.GetFromJsonAsync<JsonElement>("/api/v1/telescope/0/rightascension"));
+        var responses = await Task.WhenAll(reads).WaitAsync(TimeSpan.FromSeconds(3));
+        Assert.All(responses, response => Assert.Equal(0, response.GetProperty("ErrorNumber").GetInt32()));
+        Assert.True(await Bool(client, "ispulseguiding"));
         Assert.True(await Bool(client, "tracking"));
     }
 

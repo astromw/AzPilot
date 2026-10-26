@@ -1,8 +1,8 @@
-# AzPilot 0.3.8 Preview
+# AzPilot 0.3.9 Preview
 
 AzPilot is an independent Windows Alt/Az controller for the Sky-Watcher AZ-EQ6 and other selectable SynScan Alt/Az mount profiles. It uses the mount's built-in USB-B connection directly and includes an ASCOM Alpaca ITelescopeV4 server. It is not affiliated with or endorsed by Sky-Watcher.
 
-**Status:** simulator-tested preview for supervised hardware commissioning. The USB command implementation has not yet been validated against your physical mount. Every listed model profile requires supervised commissioning; inclusion does not mean that model has been hardware-verified. Keep the mount under observation and use the staged checklist below before normal operation.
+**Status:** supervised hardware commissioning preview. Field testing has begun on an AZ-EQ6; 0.3.9 addresses the reported ASCOM-session and composite-motion defects, but smooth PHD2 calibration and long-duration USB reliability still require physical validation. Every listed model profile requires supervised commissioning; inclusion does not mean that model has been hardware-verified. Keep the mount under observation and use the staged checklist below before normal operation.
 
 ## Included
 
@@ -18,15 +18,15 @@ AzPilot is an independent Windows Alt/Az controller for the Sky-Watcher AZ-EQ6 a
 - Alt/Az GoTo and topocentric RA/Dec GoTo
 - Selectable single-point offset or session-based multi-point alignment with celestial RA/Dec captured at Sync and displayed for every point; three or more separated sync points fit a 3D Alt/Az transformation used by GoTo, readouts and tracking
 - Icon buttons for sidereal, lunar and solar tracking, plus Stop; variable Alt/Az rates use closed-loop position feedback
-- Tracking resumes at the current coordinate after normal manual release, GoTo completion, or centre-pad GoTo cancellation; STOP BOTH AXES, park, safety limits and communication recovery cancel automatic resumption
+- Manual arrows are additive to active tracking and pulse rates: tracking remains on, position feedback does not oppose the arrow, and final release rebases tracking at the corrected coordinate; GoTo completion and centre-pad GoTo cancellation also resume tracking
 - Session park position, Park/Unpark, and parked-motion locking
-- Timed Up/Down/Left/Right Alt/Az pulse guiding with independent axis rates
+- Timed Up/Down/Left/Right Alt/Az pulse guiding with independent axis rates, safe replacement of an active pulse, and manual overlays without cancelling tracking
 - Configurable minimum altitude from −90° to +80°, including genuine below-horizon operation, and manual-rate limits; direction-aware enforcement allows manual and park motion back toward safety while stopping motion farther out of bounds
 - Conservative slow-GoTo default and motion-stop before mode changes
 - Automatic USB reconnection without automatically resuming motion
-- ASCOM Alpaca management, discovery, ITelescopeV4 and local setup page
-- Activity log and persistent blue daytime/night-vision palette selection
-- 61 automated protocol, coordinate, alignment, simulator, profile, speed, tracking-resume/drift, GoTo-cancel, disconnect-state, tracking-start safety, direction-aware altitude-recovery, ASCOM-lifecycle, sync, park, pulse-guide and API tests
+- ASCOM Alpaca management, discovery, ITelescopeV4 and local setup page; the logical client session remains connected across physical USB reconnects while mount-dependent properties correctly report physical outages
+- Persistent activity/ASCOM command, error and slow-request diagnostics, plus blue daytime/night-vision palette selection
+- 70 automated protocol, coordinate, alignment, simulator, profile, speed, composite tracking/manual/pulse, replacement-pulse, tracking-resume/drift, GoTo-cancel, disconnect-state, tracking-start safety, altitude-recovery, ASCOM-lifecycle/concurrency, sync, park and API tests
 
 ## Run on Windows
 
@@ -68,7 +68,7 @@ The desktop **Disconnect** button closes the serial connection without sending a
 - Sidereal tracking holds the sky coordinate present when tracking is enabled. Both motor rates are updated approximately once per second using feed-forward target motion plus bounded feedback from the measured Alt/Az position, preventing small timing and rate errors from accumulating into RA/Dec drift.
 - Lunar tracking advances RA at an average 13.176396°/day; solar tracking advances RA at an average 0.985647°/day. Both hold declination constant in this model. They are tracking-rate conveniences, not exact lunar/solar ephemerides; the Moon's actual rate and declination motion vary.
 - The tracking-rate buttons are **★ Sidereal**, **☾ Lunar**, a drawn disc-and-rays **Solar** icon, and **■ Stop**. The adjacent status reads SIDEREAL, LUNAR, SOLAR, or STOP. Selecting a different rate while tracking retains the current coordinate and does not issue a mount disconnect.
-- If tracking was active before manual movement, releasing the final moving axis recaptures the current coordinate and resumes the selected rate. A completed GoTo does the same at its destination. The centre-pad **STOP** cancels a GoTo and resumes that previous rate; **STOP BOTH AXES**/AbortSlew, park, communication recovery and safety-limit stops intentionally cancel this pending resume. Intentional desktop disconnect preserves the last state instead.
+- Manual movement no longer suspends tracking. The selected tracking rate (or active pulse rate) is combined with each held arrow rate, with a 4°/s combined motor ceiling. While an arrow is held, tracking uses feed-forward rates only so position feedback cannot pull back toward the old coordinate. Releasing the final manual axis refreshes the encoder position and holds that corrected sky coordinate. A completed GoTo does the same at its destination. The centre-pad **STOP** cancels a GoTo and resumes the previous rate; **STOP BOTH AXES**/AbortSlew, park, communication recovery and safety-limit stops intentionally cancel tracking and pending resume. Intentional desktop disconnect preserves the last state instead.
 - Tracking startup is atomic: the current and next target altitude are checked before motion, and any startup failure leaves `Tracking = false` with both axes stopped. Tracking also stops if the required rate exceeds 1°/s near the zenith. Position corrections are limited to 0.05°/s per axis within that overall ceiling.
 - Altitude-limit polling compares consecutive measured positions. If the current altitude is below the minimum, upward manual or park motion toward the safe range is allowed; downward motion farther below the limit is stopped. Equivalent recovery toward 90° is allowed from above 90°. Tracking startup outside the safe range remains rejected.
 - Communication-failure recovery leaves all motion and tracking stopped. An intentional Disconnect is different: it leaves the mount's last commanded motion unchanged. A later user-initiated Connect starts a new software control session; inspect the mount and use STOP BOTH AXES if a stop is needed.
@@ -79,8 +79,15 @@ The desktop **Disconnect** button closes the serial connection without sending a
 - **Park** performs a normal slow GoTo to that position. Parking may recover from an out-of-range current altitude when the saved park position is in the safe direction. `AtPark` becomes true only after both axes stop near the target. Stop/AbortSlew cancels an active park slew.
 - While parked, normal motion, GoTo, sync, tracking and pulse guide are locked. Use **Unpark** before continuing.
 - Pulse guiding requires active tracking. Up/Down adjust altitude only; Left/Right adjust azimuth only. These are direct Alt/Az corrections, not equatorial N/E/S/W corrections. Rates are in degrees per second and durations in milliseconds.
-- A pulse adds a correction to the selected axis while the other axis maintains its tracking rate. On completion, tracking resumes at the corrected position. Stop/AbortSlew cancels the pulse and leaves tracking off.
-- Pulse guide and park are available in the dashboard and through ASCOM Alpaca. Automatic Find Home, PEC and ST-4 control are not included.
+- A pulse adds a correction to the selected axis while the other axis maintains its tracking rate. On completion, tracking continues at the corrected position. A new pulse replaces the active pulse and invalidates its old completion timer. Manual arrows remain available during a pulse and are added to the pulse/tracking rates; releasing them does not cancel either mode.
+- Sync and tracking-rate changes are accepted during a pulse. GoTo and Park deliberately cancel the pulse before starting their own motion. Guide-rate edits affect subsequent pulses without interrupting the active one. Stop/AbortSlew cancels manual, pulse and tracking together.
+- Pulse guide and park are available in the dashboard and through ASCOM Alpaca. Automatic Find Home, PEC and ST-4 control are not included. PHD2 calibration and guiding still require supervised hardware validation.
+
+## Field diagnostics
+
+The desktop activity log is also appended to `%LOCALAPPDATA%\AzPilot\logs\startup-YYYYMMDD.log`. ASCOM commands, returned errors, request durations, slow property reads, pulse replacement/completion, communication warnings and reconnection outcomes are recorded there. If Cartes du Ciel or PHD2 reports a failure, retain the log covering that exact attempt; it provides evidence of whether the request reached AzPilot and whether the failure came from the ASCOM operation or the mount/serial path.
+
+0.3.9 keeps Alpaca rather than adding a classic COM driver. COM would change the client API, not the mount's USB protocol, motor-command sequence or serial timing, so it would not inherently improve guiding or response. The ASCOM `Connected` property now represents the logical client session and remains true during a physical reconnect; mount-dependent properties return ASCOM error 1031 until the physical mount is available again.
 
 ## Deliberate preview limits
 

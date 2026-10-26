@@ -21,7 +21,7 @@ internal static class Program
 
         try
         {
-            StartupDiagnostics.Info($"Starting AzPilot 0.3.8 | {RuntimeInformation.OSDescription} | {RuntimeInformation.OSArchitecture} | .NET {Environment.Version}");
+            StartupDiagnostics.Info($"Starting AzPilot 0.3.9 | {RuntimeInformation.OSDescription} | {RuntimeInformation.OSArchitecture} | .NET {Environment.Version}");
             StartupDiagnostics.Info($"Executable: {Environment.ProcessPath}");
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
             StartupDiagnostics.Info("Application exited normally.");

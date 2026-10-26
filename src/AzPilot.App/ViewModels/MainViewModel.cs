@@ -63,7 +63,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
         AlignmentMode = settings.AlignmentMode;
 
         _engine.SnapshotChanged += snapshot => Dispatcher.UIThread.Post(() => { Snapshot = snapshot; });
-        _engine.Logged += line => Dispatcher.UIThread.Post(() => { Logs.Add(line); if (Logs.Count > 150) Logs.RemoveAt(0); });
+        _engine.Logged += line =>
+        {
+            StartupDiagnostics.Info(line);
+            Dispatcher.UIThread.Post(() => { Logs.Add(line); if (Logs.Count > 150) Logs.RemoveAt(0); });
+        };
         foreach (var log in _engine.RecentLogs) Logs.Add(log);
         RefreshPorts();
 

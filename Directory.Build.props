@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup>
-    <Version>0.3.8</Version>
-    <AssemblyVersion>0.3.8.0</AssemblyVersion>
-    <FileVersion>0.3.8.0</FileVersion>
+    <Version>0.3.9</Version>
+    <AssemblyVersion>0.3.9.0</AssemblyVersion>
+    <FileVersion>0.3.9.0</FileVersion>
     <Company>AzPilot open-source project</Company>
     <Product>AzPilot SynScan Alt/Az Controller</Product>
     <Description>Independent Alt/Az controller and ASCOM Alpaca server for supported SynScan mounts.</Description>
